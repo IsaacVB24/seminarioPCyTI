@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+dist/
+.vite/
+backend/venv/
+*.pyc
+__pycache__/
+.DS_Store
+*.log
