@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buscador de artículos científicos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <h1>Buscador de artículos científicos</h1>
+        <p class="tagline">PubMed · arXiv · Semantic Scholar</p>
+      </header>
+      <main class="main">
+        <form id="search-form" class="search-form">
+          <div class="input-row">
+            <input
+              type="search"
+              id="query"
+              name="q"
+              placeholder="Términos de búsqueda (ej: machine learning, CRISPR, climate change)"
+              autocomplete="off"
+              required
+            />
+            <button type="submit" id="submit-btn">Buscar</button>
+          </div>
+          <div class="filters">
+            <label class="filter-group">
+              <span>Fuentes</span>
+              <div class="checkboxes">
+                <label><input type="checkbox" name="source" value="pubmed" checked /> PubMed</label>
+                <label><input type="checkbox" name="source" value="arxiv" checked /> arXiv</label>
+                <label><input type="checkbox" name="source" value="semantic_scholar" checked /> Semantic Scholar</label>
+              </div>
+            </label>
+            <label class="filter-group">
+              <span>Ordenar por</span>
+              <select name="sort" id="sort">
+                <option value="relevance">Relevancia</option>
+                <option value="pub_date">Fecha de publicación</option>
+              </select>
+            </label>
+            <label class="filter-group">
+              <span>Desde (fecha)</span>
+              <input type="date" name="from_date" id="from_date" />
+            </label>
+            <label class="filter-group">
+              <span>Hasta (fecha)</span>
+              <input type="date" name="to_date" id="to_date" />
+            </label>
+            <label class="filter-group">
+              <span>Máx. resultados</span>
+              <input type="number" name="max_results" id="max_results" value="20" min="5" max="50" />
+            </label>
+          </div>
+        </form>
+        <div id="status" class="status" aria-live="polite"></div>
+        <section id="results" class="results"></section>
+      </main>
+      <footer class="footer">
+        <p>Para temas de investigación. Backend en Python (FastAPI), frontend en TypeScript.</p>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
