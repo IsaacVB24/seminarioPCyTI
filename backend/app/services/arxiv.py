@@ -1,7 +1,10 @@
 """Búsqueda en arXiv (física, matemáticas, CS, etc.)."""
 import httpx
+import logging
 from typing import Optional
 import xml.etree.ElementTree as ET
+
+logger = logging.getLogger(__name__)
 
 ARXiv_NS = {"atom": "http://www.w3.org/2005/Atom"}
 
@@ -18,6 +21,8 @@ async def search_arxiv(
     Busca en arXiv. sort_by: relevance, lastUpdatedDate, submittedDate.
     sort_order: ascending, descending.
     """
+    logger.info(f"[ARXIV] Searching for: '{query}' (max_results={max_results})")
+    
     params = {
         "search_query": f"all:{query}",
         "start": 0,
@@ -26,8 +31,13 @@ async def search_arxiv(
         "sortOrder": sort_order,
     }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.get("http://export.arxiv.org/api/query", params=params)
+    headers = {"User-Agent": "SeminarioResearch/1.0"}
+
+    async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
+        url = "https://export.arxiv.org/api/query"
+        logger.debug(f"[ARXIV] GET {url}")
+        r = await client.get(url, params=params)
+        logger.info(f"[ARXIV] Response status: {r.status_code}")
         r.raise_for_status()
         root = ET.fromstring(r.text)
 
@@ -70,4 +80,6 @@ async def search_arxiv(
             "pdf_url": link_pdf or f"https://arxiv.org/pdf/{arxiv_id_short}.pdf",
             "snippet": snippet,
         })
+    
+    logger.info(f"[ARXIV] Found {len(articles)} articles")
     return articles

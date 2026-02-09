@@ -1,15 +1,22 @@
 """
 Backend para búsqueda de artículos científicos.
-Fuentes: PubMed, arXiv, Semantic Scholar.
+Fuentes: arXiv, Semantic Scholar.
 """
-from fastapi import FastAPI, Query
+import logging
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import search
+from app.routers import router
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 app = FastAPI(
     title="Buscador de Artículos Científicos",
-    description="API para buscar en PubMed, arXiv y Semantic Scholar según criterios de investigación.",
+    description="API para buscar en arXiv y Semantic Scholar según criterios de investigación.",
     version="1.0.0",
 )
 
@@ -21,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(search.router, prefix="/api", tags=["search"])
+app.include_router(router, prefix="/api", tags=["search"])
 
 
 @app.get("/")
