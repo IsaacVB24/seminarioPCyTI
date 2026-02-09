@@ -28,6 +28,14 @@
             />
             <button type="submit" id="submit-btn">Buscar</button>
           </div>
+          <div class="context-row">
+            <textarea
+              id="ai-context"
+              name="context"
+              placeholder="Contexto para IA (opcional): ej. 'busco aplicaciones médicas', 'solo papers recientes', 'enfocado en deep learning'..."
+              rows="2"
+            ></textarea>
+          </div>
           <div class="filters">
             <label class="filter-group">
               <span>Fuentes</span>
@@ -54,6 +62,10 @@
             <label class="filter-group">
               <span>Máx. resultados</span>
               <input type="number" name="max_results" id="max_results" value="20" min="5" max="50" />
+            </label>
+            <label class="filter-group filter-llm">
+              <input type="checkbox" name="use_llm_filter" id="use_llm_filter" />
+              <span>🤖 Filtrar con IA</span>
             </label>
           </div>
         </form>
