@@ -16,6 +16,8 @@ interface Article {
 interface SearchResponse {
     query: string;
     total: number;
+    original_total?: number;
+    llm_filtered?: boolean;
     errors: { error: string; message: string }[];
     articles: Article[];
 }
@@ -100,8 +102,11 @@ form.addEventListener("submit", async (e) => {
     });
     const fromDate = (document.getElementById("from_date") as HTMLInputElement).value;
     const toDate = (document.getElementById("to_date") as HTMLInputElement).value;
+    const useLLMFilter = (document.getElementById("use_llm_filter") as HTMLInputElement).checked;
+
     if (fromDate) params.set("from_date", fromDate);
     if (toDate) params.set("to_date", toDate);
+    if (useLLMFilter) params.set("use_llm_filter", "true");
 
     setStatus("Buscando...", "loading");
     submitBtn.disabled = true;
@@ -112,14 +117,14 @@ form.addEventListener("submit", async (e) => {
         if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
         const data: SearchResponse = await res.json();
 
-        if (data.errors?.length) {
-            setStatus(
-                `Encontrados ${data.total} artículos. Algunas fuentes fallaron: ${data.errors.map((e) => e.error).join(", ")}`,
-                "success"
-            );
-        } else {
-            setStatus(`Encontrados ${data.total} artículos.`, "success");
+        let statusMsg = `Encontrados ${data.total} artículos`;
+        if (data.llm_filtered && data.original_total && data.original_total > data.total) {
+            statusMsg += ` (${data.original_total} antes del filtro IA)`;
         }
+        if (data.errors?.length) {
+            statusMsg += `. Algunas fuentes fallaron: ${data.errors.map((e) => e.error).join(", ")}`;
+        }
+        setStatus(statusMsg, "success");
 
         if (data.articles?.length) {
             resultsEl.innerHTML = data.articles.map(renderArticle).join("");

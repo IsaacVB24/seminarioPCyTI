@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query
 from typing import Optional
 
 from app.services import search_arxiv, search_semantic_scholar
+from app.services.llm_filter import filter_articles_with_llm
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,8 @@ async def search_all(
     sort: str = Query("relevance", description="relevance | pub_date"),
     from_date: Optional[str] = Query(None, description="Fecha desde YYYY-MM-DD"),
     to_date: Optional[str] = Query(None, description="Fecha hasta YYYY-MM-DD"),
+    use_llm_filter: bool = Query(False, description="Filtrar resultados con IA"),
+    context: Optional[str] = Query(None, description="Contexto adicional para el filtro IA"),
 ):
     """
     Busca en las fuentes seleccionadas y devuelve resultados normalizados.
@@ -62,11 +65,25 @@ async def search_all(
     errors = [x for x in results if isinstance(x, dict) and "error" in x]
     articles = [x for x in results if isinstance(x, dict) and "source" in x]
 
-    logger.info(f"[SEARCH] Returning {len(articles)} articles, {len(errors)} errors")
+    original_count = len(articles)
+    
+    # Apply LLM filtering if requested
+    if use_llm_filter and articles:
+        logger.info(f"[SEARCH] Applying LLM filter to {len(articles)} articles")
+        try:
+            articles = await filter_articles_with_llm(q, articles, context)
+            logger.info(f"[SEARCH] LLM filtered to {len(articles)} articles")
+        except Exception as e:
+            logger.error(f"[SEARCH] LLM filter failed: {e}")
+            # Continue with unfiltered results on error
+
+    logger.info(f"[SEARCH] Returning {len(articles)} articles (original: {original_count}), {len(errors)} errors")
     
     return {
         "query": q,
         "total": len(articles),
+        "original_total": original_count if use_llm_filter else len(articles),
+        "llm_filtered": use_llm_filter,
         "errors": errors,
         "articles": articles[:max_results],
     }
