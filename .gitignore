@@ -8,3 +8,5 @@ backend/venv/
 __pycache__/
 .DS_Store
 *.log
+.env
+filter_logs/

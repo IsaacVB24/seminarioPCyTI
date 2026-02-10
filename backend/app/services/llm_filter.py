@@ -1,11 +1,12 @@
-"""LLM-powered article filtering using Groq."""
+"""LLM-powered article filtering using Google Gemini."""
 import os
 import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
-from groq import AsyncGroq
+from google import genai
+from google.genai import types
 
 # Load environment variables
 load_dotenv()
@@ -19,12 +20,12 @@ LOGS_DIR.mkdir(exist_ok=True)
 
 class LLMArticleFilter:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if self.api_key:
-            self.client = AsyncGroq(api_key=self.api_key)
+            self.client = genai.Client(api_key=self.api_key)
         else:
             self.client = None
-            logger.warning("No GROQ_API_KEY found. LLM filtering will be disabled.")
+            logger.warning("No GEMINI_API_KEY found. LLM filtering will be disabled.")
 
     async def filter_articles(self, query: str, articles: list[dict], context: Optional[str] = None, max_articles: int = 20) -> list[dict]:
         """
@@ -56,42 +57,62 @@ class LLMArticleFilter:
         # Build context instruction
         context_instruction = ""
         if context and context.strip():
-            context_instruction = f"\n\nAdditional Context: The user is specifically looking for: {context.strip()}\nConsider this context when evaluating relevance."
+            context_instruction = f"""
+MANDATORY FILTER CRITERIA:
+The user has specified a STRICT context filter: "{context.strip()}"
+This is NOT optional - articles MUST strongly relate to this context to receive a high score.
+Articles that match the query but do NOT relate to this context should receive a score below 0.3."""
         
-        prompt = f"""You are a scientific article relevance evaluator.
+        prompt = f"""You are an expert scientific article relevance evaluator.
 
-User Query: "{query}"{context_instruction}
+IMPORTANT: If the query or context is NOT in English, first translate them to English for proper evaluation.
+- Original Query: "{query}"
+- Query in English: [Translate if needed, otherwise use as-is]
+{context_instruction if context else ''}
 
-Articles to evaluate:
+ARTICLES TO EVALUATE:
 {articles_text}
 
-Task: Analyze each article and determine its relevance to the user's query{' and the provided context' if context else ''}.
-For each article, assign a relevance score from 0.0 to 1.0 where:
-- 1.0 = Highly relevant, directly addresses the query{' and context' if context else ''}
-- 0.7-0.9 = Very relevant, closely related
-- 0.5-0.6 = Moderately relevant, tangentially related
-- Below 0.5 = Not very relevant
+EVALUATION CRITERIA:
+You must evaluate each article based on TWO dimensions:
+1. **Query Relevance**: How well does the article address the search query "{query}"?
+2. **Context Match**: {"How strongly does the article relate to: " + context.strip() + "?" if context else "N/A (no context filter)"}
 
-Return ONLY a JSON array with this exact format:
+{"CRITICAL: Both dimensions must be satisfied for a high score. An article about the query topic that does NOT match the context should score LOW (< 0.3)." if context else ""}
+
+SCORING GUIDELINES:
+- 0.9-1.0: Directly addresses query AND {"perfectly matches context" if context else "is highly relevant"}
+- 0.7-0.89: Strongly related to query AND {"clearly relates to context" if context else "very relevant"}
+- 0.5-0.69: Moderately related to query AND {"has some connection to context" if context else "somewhat relevant"}
+- 0.3-0.49: Weakly related to query {"OR does not match context well" if context else ""}
+- Below 0.3: Not relevant {"or completely misses the context criteria" if context else ""}
+
+RESPONSE FORMAT:
+Return ONLY a valid JSON array. No explanations outside the JSON:
 [
-  {{"index": 0, "score": 0.95, "reason": "Brief explanation"}},
-  {{"index": 1, "score": 0.75, "reason": "Brief explanation"}}
+  {{"index": 0, "score": 0.95, "query_match": "Brief query relevance", "context_match": "{"Brief context relevance" if context else "N/A"}"}},
+  {{"index": 1, "score": 0.72, "query_match": "Brief query relevance", "context_match": "{"Brief context relevance" if context else "N/A"}"}}
 ]
 
-Only include articles with score >= 0.5. Order by score (highest first)."""
+Only include articles with score >= 0.5. Order by score descending."""
 
         try:
-            response = await self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",  # Updated to current model
-                messages=[
-                    {"role": "system", "content": "You are a scientific research assistant that evaluates article relevance."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,  # Lower temperature for more consistent scoring
-                max_tokens=2000,
+            response = await self.client.aio.models.generate_content(
+                model='gemini-3-flash-preview',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=1024
+                    )
+                )
             )
             
-            result_text = response.choices[0].message.content.strip()
+            # Extraer el texto de la respuesta de Gemini
+            result_text = ""
+            for part in response.candidates[0].content.parts:
+                if hasattr(part, 'text') and part.text:
+                    result_text += part.text
+            
             logger.debug(f"[LLM_FILTER] Raw response: {result_text}")
             
             # Parse JSON response
@@ -111,7 +132,10 @@ Only include articles with score >= 0.5. Order by score (highest first)."""
                 if 0 <= idx < len(articles_to_analyze):
                     article = articles_to_analyze[idx].copy()
                     article["llm_relevance_score"] = rank["score"]
-                    article["llm_relevance_reason"] = rank.get("reason", "")
+                    # Combine query_match and context_match for the reason
+                    query_match = rank.get("query_match", "")
+                    context_match = rank.get("context_match", "")
+                    article["llm_relevance_reason"] = f"Query: {query_match}. Context: {context_match}" if context_match and context_match != "N/A" else query_match
                     filtered_articles.append(article)
             
             logger.info(f"[LLM_FILTER] Filtered to {len(filtered_articles)} relevant articles")
