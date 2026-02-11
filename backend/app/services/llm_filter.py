@@ -88,10 +88,13 @@ SCORING GUIDELINES:
 - Below 0.3: Not relevant {"or completely misses the context criteria" if context else ""}
 
 RESPONSE FORMAT:
-Return ONLY a valid JSON array. No explanations outside the JSON:
+Return ONLY a valid JSON array. No explanations outside the JSON.
+CRITICAL: The 'reason' field MUST BE IN SPANISH.
+IMPORTANT: Provide a single, concise explanation of why this article received this score. Do NOT mention "Query" or "Context" explicitly like "Match: ...". Just natural language explanation.
+
 [
-  {{"index": 0, "score": 0.95, "query_match": "Brief query relevance", "context_match": "{"Brief context relevance" if context else "N/A"}"}},
-  {{"index": 1, "score": 0.72, "query_match": "Brief query relevance", "context_match": "{"Brief context relevance" if context else "N/A"}"}}
+  {{"index": 0, "score": 0.95, "reason": "Es altamente relevante porque propone un método directo para..."}},
+  {{"index": 1, "score": 0.72, "reason": "Es relevante pero se enfoca más en..."}}
 ]
 
 Only include articles with score >= 0.5. Order by score descending."""
@@ -132,10 +135,7 @@ Only include articles with score >= 0.5. Order by score descending."""
                 if 0 <= idx < len(articles_to_analyze):
                     article = articles_to_analyze[idx].copy()
                     article["llm_relevance_score"] = rank["score"]
-                    # Combine query_match and context_match for the reason
-                    query_match = rank.get("query_match", "")
-                    context_match = rank.get("context_match", "")
-                    article["llm_relevance_reason"] = f"Query: {query_match}. Context: {context_match}" if context_match and context_match != "N/A" else query_match
+                    article["llm_relevance_reason"] = rank.get("reason", "Relevante según análisis IA")
                     filtered_articles.append(article)
             
             logger.info(f"[LLM_FILTER] Filtered to {len(filtered_articles)} relevant articles")
