@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query
 from typing import Optional
 
 from app.services import search_arxiv, search_semantic_scholar
+from app.services.openalex import search_openalex
 from app.services.llm_filter import filter_articles_with_llm
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ router = APIRouter()
 @router.get("/search")
 async def search_all(
     q: str = Query(..., min_length=2, description="Términos de búsqueda"),
-    sources: str = Query("arxiv,semantic_scholar", description="Fuentes: arxiv, semantic_scholar"),
+    sources: str = Query("arxiv,semantic_scholar,openalex", description="Fuentes: arxiv, semantic_scholar, openalex"),
     max_results: int = Query(20, ge=1, le=50),
     sort: str = Query("relevance", description="relevance | pub_date"),
     from_date: Optional[str] = Query(None, description="Fecha desde YYYY-MM-DD"),
@@ -60,6 +61,20 @@ async def search_all(
         except Exception as e:
             logger.error(f"[SEARCH] Semantic Scholar error: {e}")
             results.append({"error": "semantic_scholar", "message": str(e)})
+
+    if "openalex" in chosen:
+        try:
+            results.extend(
+                await search_openalex(
+                    query=q,
+                    max_results=per_source,
+                    from_date=from_date,
+                    to_date=to_date,
+                )
+            )
+        except Exception as e:
+            logger.error(f"[SEARCH] OpenAlex error: {e}")
+            results.append({"error": "openalex", "message": str(e)})
 
     # Filtrar entradas que son errores para no mezclar con artículos
     errors = [x for x in results if isinstance(x, dict) and "error" in x]

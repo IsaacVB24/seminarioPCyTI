@@ -265,6 +265,11 @@ input[type="number"] {
   color: #67e8f9;
 }
 
+.source-badge.openalex {
+  background: rgba(124, 58, 237, 0.2);
+  color: #c4b5fd;
+}
+
 .snippet {
   color: var(--text-muted);
   font-size: 0.9rem;
