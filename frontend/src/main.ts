@@ -42,12 +42,14 @@ function sourceBadgeClass(source: string): string {
   if (source === "arxiv") return "arxiv";
   if (source === "semantic_scholar") return "semantic_scholar";
   if (source === "openalex") return "openalex";
+  if (source === "crossref") return "crossref";
   return "";
 }
 
 function sourceLabel(source: string): string {
   if (source === "semantic_scholar") return "Semantic Scholar";
   if (source === "openalex") return "OpenAlex";
+  if (source === "crossref") return "CrossRef";
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 

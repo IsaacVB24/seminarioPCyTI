@@ -270,6 +270,11 @@ input[type="number"] {
   color: #c4b5fd;
 }
 
+.source-badge.crossref {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
 .snippet {
   color: var(--text-muted);
   font-size: 0.9rem;
