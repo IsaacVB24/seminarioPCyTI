@@ -1,19 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Buscador de artículos científicos</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
       <header class="header">
         <h1>Buscador de artículos científicos</h1>
-        <p class="tagline">arXiv · Semantic Scholar</p>
+        <p class="tagline">arXiv · Semantic Scholar · OpenAlex · CrossRef</p>
       </header>
       <main class="main">
         <form id="search-form" class="search-form">
@@ -28,12 +31,49 @@
             />
             <button type="submit" id="submit-btn">Buscar</button>
           </div>
+          <div class="context-row">
+            <textarea
+              id="ai-context"
+              name="context"
+              placeholder="Contexto para IA (opcional): ej. 'busco aplicaciones médicas', 'solo papers recientes', 'enfocado en deep learning'..."
+              rows="2"
+            ></textarea>
+          </div>
           <div class="filters">
             <label class="filter-group">
               <span>Fuentes</span>
               <div class="checkboxes">
-                <label><input type="checkbox" name="source" value="arxiv" checked /> arXiv</label>
-                <label><input type="checkbox" name="source" value="semantic_scholar" checked /> Semantic Scholar</label>
+                <label
+                  ><input type="checkbox" name="source" value="arxiv" checked />
+                  arXiv</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="source"
+                    value="semantic_scholar"
+                    checked
+                  />
+                  Semantic Scholar</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="source"
+                    value="openalex"
+                    checked
+                  />
+                  OpenAlex</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="source"
+                    value="crossref"
+                    checked
+                  />
+                  CrossRef</label
+                >
               </div>
             </label>
             <label class="filter-group">
@@ -53,7 +93,22 @@
             </label>
             <label class="filter-group">
               <span>Máx. resultados</span>
-              <input type="number" name="max_results" id="max_results" value="20" min="5" max="50" />
+              <input
+                type="number"
+                name="max_results"
+                id="max_results"
+                value="20"
+                min="5"
+                max="50"
+              />
+            </label>
+            <label class="filter-group filter-llm">
+              <input
+                type="checkbox"
+                name="use_llm_filter"
+                id="use_llm_filter"
+              />
+              <span>🤖 Filtrar con IA</span>
             </label>
           </div>
         </form>
@@ -61,7 +116,10 @@
         <section id="results" class="results"></section>
       </main>
       <footer class="footer">
-        <p>Para temas de investigación. Backend en Python (FastAPI), frontend en TypeScript.</p>
+        <p>
+          Para temas de investigación. Backend en Python (FastAPI), frontend en
+          TypeScript.
+        </p>
       </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
