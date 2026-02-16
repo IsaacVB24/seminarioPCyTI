@@ -32,7 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers.zotero import router as zotero_router
+
 app.include_router(router, prefix="/api", tags=["search"])
+app.include_router(zotero_router, prefix="/api/zotero", tags=["zotero"])
 
 
 @app.get("/")

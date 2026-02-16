@@ -4,13 +4,13 @@ interface Article {
   id: string;
   source: string;
   title: string;
-  authors: { name: string }[];
+  authors: { name: string }[] | string; // Zotero returns string sometimes
   journal: string;
   pub_date: string;
   doi: string | null;
   url: string;
   pdf_url?: string;
-  snippet: string;
+  snippet?: string;
   llm_relevance_score?: number;
   llm_relevance_reason?: string;
 }
@@ -24,11 +24,29 @@ interface SearchResponse {
   articles: Article[];
 }
 
+// DOM Elements
 const form = document.getElementById("search-form") as HTMLFormElement;
 const queryInput = document.getElementById("query") as HTMLInputElement;
 const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
 const statusEl = document.getElementById("status") as HTMLDivElement;
 const resultsEl = document.getElementById("results") as HTMLElement;
+
+// Views
+const searchView = document.getElementById("search-view") as HTMLElement;
+const libraryView = document.getElementById("library-view") as HTMLElement;
+const libraryResultsEl = document.getElementById(
+  "library-results",
+) as HTMLElement;
+
+// Nav
+const savedRefsBtn = document.getElementById(
+  "saved-refs-btn",
+) as HTMLButtonElement;
+const backToSearchBtn = document.getElementById(
+  "back-to-search-btn",
+) as HTMLButtonElement;
+
+let currentArticles: Article[] = []; // Store current search results to save them
 
 function setStatus(
   message: string,
@@ -45,6 +63,7 @@ function sourceBadgeClass(source: string): string {
   if (source === "crossref") return "crossref";
   if (source === "scopus") return "scopus";
   if (source === "springer") return "springer";
+  if (source === "zotero") return "zotero";
   return "";
 }
 
@@ -54,13 +73,22 @@ function sourceLabel(source: string): string {
   if (source === "crossref") return "CrossRef";
   if (source === "scopus") return "Scopus";
   if (source === "springer") return "Springer Link";
+  if (source === "zotero") return "Zotero Library";
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 
-function renderArticle(a: Article): string {
-  const authorsStr = a.authors?.length
-    ? a.authors.map((x) => x.name).join(", ")
-    : "";
+function renderArticle(
+  a: Article,
+  index: number,
+  isSavedView: boolean = false,
+): string {
+  let authorsStr = "";
+  if (typeof a.authors === "string") {
+    authorsStr = a.authors;
+  } else if (Array.isArray(a.authors)) {
+    authorsStr = a.authors.map((x) => x.name).join(", ");
+  }
+
   const meta = [authorsStr, a.journal, a.pub_date].filter(Boolean).join(" · ");
   const links = [
     `<a href="${a.url}" target="_blank" rel="noopener">Ver artículo</a>`,
@@ -92,6 +120,12 @@ function renderArticle(a: Article): string {
         `;
   }
 
+  // Save button (only for search results)
+  let saveBtn = "";
+  if (!isSavedView) {
+    saveBtn = `<button class="save-btn" onclick="window.saveToZotero(${index})">💾 Guardar</button>`;
+  }
+
   return `
     <article class="article-card" data-source="${a.source}">
       <h3><a href="${a.url}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></h3>
@@ -101,16 +135,111 @@ function renderArticle(a: Article): string {
       </div>
       ${llmBadge}
       ${a.snippet ? `<p class="snippet">${escapeHtml(a.snippet)}</p>` : ""}
-      <div class="links">${links.join("")}</div>
+      <div class="links">
+        ${links.join("")}
+        ${saveBtn}
+      </div>
     </article>
   `;
 }
 
 function escapeHtml(s: string): string {
+  if (!s) return "";
   const div = document.createElement("div");
   div.textContent = s;
   return div.innerHTML;
 }
+
+// Expose functionality to global scope for inline onclick
+(window as any).saveToZotero = async (index: number) => {
+  const article = currentArticles[index];
+  if (!article) return;
+
+  // Find button within the specific article card in resultsEl
+  // Robust way: get all save buttons in results
+  const btns = resultsEl.querySelectorAll(".save-btn");
+  const btn = btns[index] as HTMLButtonElement;
+
+  if (!btn) return;
+
+  const originalText = btn.textContent;
+  btn.textContent = "Guardando...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/zotero/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(article),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      btn.textContent = "✅ Guardado";
+      btn.classList.add("success");
+      // Optional: reset after 2s
+      setTimeout(() => {
+        btn.textContent = "💾 Guardado";
+      }, 2000);
+    } else {
+      alert(data.error || "Error al guardar");
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  } catch (e) {
+    alert("Error de conexión al guardar.");
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+};
+
+async function loadSavedReferences() {
+  searchView.classList.add("hidden");
+  libraryView.classList.remove("hidden");
+
+  libraryResultsEl.innerHTML =
+    "<p class='status loading'>Cargando biblioteca...</p>";
+
+  try {
+    const res = await fetch(`${API_BASE}/zotero/items`);
+    if (!res.ok) throw new Error("Error al obtener referencias");
+    const items: Article[] = await res.json();
+
+    if (items.length === 0) {
+      libraryResultsEl.innerHTML =
+        "<p class='status'>No tienes referencias guardadas aún.</p>";
+      return;
+    }
+
+    libraryResultsEl.innerHTML = items
+      .map((a, i) => renderArticle(a, i, true))
+      .join("");
+  } catch (e) {
+    libraryResultsEl.innerHTML =
+      "<p class='status error'>Error al cargar biblioteca Zotero. Verifica tu configuración.</p>";
+  }
+}
+
+function showSearch() {
+  libraryView.classList.add("hidden");
+  searchView.classList.remove("hidden");
+  // Determine if we should restore results
+  if (currentArticles.length > 0) {
+    resultsEl.innerHTML = currentArticles
+      .map((a, i) => renderArticle(a, i, false))
+      .join("");
+    setStatus(
+      `Resultados anteriores restaurados (${currentArticles.length})`,
+      "success",
+    );
+  } else {
+    setStatus("Listo para buscar", "idle");
+  }
+}
+
+// Event Listeners
+savedRefsBtn.addEventListener("click", loadSavedReferences);
+backToSearchBtn.addEventListener("click", showSearch);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -154,6 +283,7 @@ form.addEventListener("submit", async (e) => {
   setStatus("Buscando...", "loading");
   submitBtn.disabled = true;
   resultsEl.innerHTML = "";
+  currentArticles = []; // Reset current articles
 
   try {
     const res = await fetch(`${API_BASE}/search?${params}`);
@@ -173,8 +303,12 @@ form.addEventListener("submit", async (e) => {
     }
     setStatus(statusMsg, "success");
 
-    if (data.articles?.length) {
-      resultsEl.innerHTML = data.articles.map(renderArticle).join("");
+    currentArticles = data.articles || [];
+
+    if (currentArticles.length) {
+      resultsEl.innerHTML = currentArticles
+        .map((a, index) => renderArticle(a, index, false))
+        .join("");
     } else {
       resultsEl.innerHTML = `
         <p class="status text-muted">No se encontraron artículos para "${escapeHtml(q)}". Prueba otros términos o fuentes.</p>

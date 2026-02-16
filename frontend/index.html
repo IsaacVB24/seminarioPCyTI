@@ -16,17 +16,36 @@
     <div id="app">
       <header class="header">
         <h1>Buscador de artículos científicos</h1>
-        <p class="tagline">arXiv · Semantic Scholar · OpenAlex · CrossRef</p>
+        <p class="tagline">
+          Explora arXiv, Semantic Scholar, OpenAlex, CrossRef, Scopus y más.
+        </p>
+        <button
+          type="button"
+          id="saved-refs-btn"
+          class="nav-btn"
+          title="Ver biblioteca Zotero"
+        >
+          📚 Mis Referencias
+        </button>
       </header>
-      <main class="main">
+
+      <div id="library-view" class="hidden">
+        <div class="view-header">
+          <h2>📚 Referencias Guardadas (Zotero)</h2>
+          <button type="button" id="back-to-search-btn" class="secondary-btn">
+            ← Volver a buscar
+          </button>
+        </div>
+        <div id="library-results" class="results"></div>
+      </div>
+
+      <main id="search-view">
         <form id="search-form" class="search-form">
           <div class="input-row">
             <input
               type="search"
               id="query"
-              name="q"
-              placeholder="Términos de búsqueda (ej: machine learning, CRISPR, climate change)"
-              autocomplete="off"
+              placeholder="Ej. software engineering, deep learning..."
               required
             />
             <button type="submit" id="submit-btn">Buscar</button>

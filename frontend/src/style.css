@@ -385,3 +385,90 @@ input[type="number"] {
   background: rgba(0, 128, 128, 0.2);
   color: #008080;
 }
+
+.source-badge.zotero {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+/* Clean up buttons */
+.nav-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-header h2 {
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+/* Ensure secondary button looks decent */
+.secondary-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.library-header {
+  /* Removed old class */
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.save-btn {
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
