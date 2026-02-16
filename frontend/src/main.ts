@@ -45,6 +45,10 @@ const savedRefsBtn = document.getElementById(
 const backToSearchBtn = document.getElementById(
   "back-to-search-btn",
 ) as HTMLButtonElement;
+const saveAllBtn = document.getElementById("save-all-btn") as HTMLButtonElement;
+const resultsControls = document.getElementById(
+  "results-controls",
+) as HTMLDivElement;
 
 let currentArticles: Article[] = []; // Store current search results to save them
 
@@ -54,6 +58,46 @@ function setStatus(
 ) {
   statusEl.textContent = message;
   statusEl.className = "status " + type;
+}
+
+function showToast(
+  title: string,
+  message: string,
+  type: "success" | "error" | "info" = "info",
+  duration: number = 5000,
+) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+
+  toast.innerHTML = `
+        <div class="toast-header">
+            <span>${escapeHtml(title)}</span>
+            <button class="toast-close">&times;</button>
+        </div>
+        <div class="toast-body">${escapeHtml(message)}</div>
+    `;
+
+  container.appendChild(toast);
+
+  // Close logic
+  const closeBtn = toast.querySelector(".toast-close");
+  closeBtn?.addEventListener("click", () => {
+    toast.style.animation = "fadeOut 0.3s ease-out forwards";
+    setTimeout(() => toast.remove(), 300);
+  });
+
+  // Auto dismiss
+  if (duration > 0) {
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        toast.style.animation = "fadeOut 0.3s ease-out forwards";
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, duration);
+  }
 }
 
 function sourceBadgeClass(source: string): string {
@@ -193,8 +237,27 @@ function escapeHtml(s: string): string {
   }
 };
 
+function showSearch() {
+  libraryView.classList.add("hidden");
+  searchView.classList.remove("hidden");
+  // Determine if we should restore results
+  if (currentArticles.length > 0) {
+    resultsEl.innerHTML = currentArticles
+      .map((a, i) => renderArticle(a, i, false))
+      .join("");
+    setStatus(
+      `Resultados anteriores restaurados (${currentArticles.length})`,
+      "success",
+    );
+  } else {
+    setStatus("Listo para buscar", "idle");
+  }
+  updateControlsVisibility();
+}
+
 async function loadSavedReferences() {
   searchView.classList.add("hidden");
+  resultsControls.classList.add("hidden"); // Hide button in library view
   libraryView.classList.remove("hidden");
 
   libraryResultsEl.innerHTML =
@@ -220,26 +283,46 @@ async function loadSavedReferences() {
   }
 }
 
-function showSearch() {
-  libraryView.classList.add("hidden");
-  searchView.classList.remove("hidden");
-  // Determine if we should restore results
-  if (currentArticles.length > 0) {
-    resultsEl.innerHTML = currentArticles
-      .map((a, i) => renderArticle(a, i, false))
-      .join("");
-    setStatus(
-      `Resultados anteriores restaurados (${currentArticles.length})`,
-      "success",
-    );
+function updateControlsVisibility() {
+  if (currentArticles.length > 0 && !searchView.classList.contains("hidden")) {
+    resultsControls.classList.remove("hidden");
   } else {
-    setStatus("Listo para buscar", "idle");
+    resultsControls.classList.add("hidden");
   }
 }
 
 // Event Listeners
 savedRefsBtn.addEventListener("click", loadSavedReferences);
 backToSearchBtn.addEventListener("click", showSearch);
+
+saveAllBtn.addEventListener("click", async () => {
+  if (currentArticles.length === 0) return;
+
+  const originalText = saveAllBtn.textContent;
+  saveAllBtn.textContent = "⏳ Guardando todo... (esto puede tardar)";
+  saveAllBtn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/zotero/items/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentArticles),
+    });
+    const data = await res.json();
+
+    if (data.saved !== undefined) {
+      const msg = `✅ Guardados: ${data.saved}\n⏭️ Omitidos: ${data.skipped}\n${data.errors.length ? "⚠️ Errores: " + data.errors.length : ""}`;
+      showToast("Proceso Finalizado", msg, "success", 7000);
+    } else {
+      showToast("Error", "Error en la respuesta del servidor", "error");
+    }
+  } catch (e) {
+    showToast("Error", "Error de conexión al guardar lote.", "error");
+  } finally {
+    saveAllBtn.textContent = originalText;
+    saveAllBtn.disabled = false;
+  }
+});
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -304,6 +387,7 @@ form.addEventListener("submit", async (e) => {
     setStatus(statusMsg, "success");
 
     currentArticles = data.articles || [];
+    updateControlsVisibility(); // Show button if results exist
 
     if (currentArticles.length) {
       resultsEl.innerHTML = currentArticles

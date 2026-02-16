@@ -1,7 +1,7 @@
 """Rutas para integración con Zotero."""
 from fastapi import APIRouter, HTTPException, Body
 from typing import List, Dict, Any
-from app.services.zotero import get_zotero_items, save_to_zotero
+from app.services.zotero import get_zotero_items, save_to_zotero, save_batch_to_zotero
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ async def list_items():
             "pub_date": data.get("date", ""),
             "url": data.get("url", ""),
             "doi": data.get("DOI", ""),
-            "source": "zotero",
+            "source": data.get("libraryCatalog", "zotero"), # Retrieve original source
             "snippet": data.get("abstractNote", "") # Add snippet too
         })
     print(f"[ROUTER] Zotero items found: {len(simplified)}")
@@ -39,3 +39,8 @@ async def save_item(article: Dict[str, Any] = Body(...)):
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+@router.post("/items/batch")
+async def save_items_batch(articles: List[Dict[str, Any]] = Body(...)):
+    """Guardar múltiples artículos (evitando duplicados)."""
+    return await save_batch_to_zotero(articles)

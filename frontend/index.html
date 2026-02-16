@@ -149,6 +149,11 @@
             </label>
           </div>
         </form>
+        <div id="results-controls" class="results-controls hidden">
+          <button id="save-all-btn" class="secondary-btn">
+            💾 Guardar todos los resultados en Zotero
+          </button>
+        </div>
         <div id="status" class="status" aria-live="polite"></div>
         <section id="results" class="results"></section>
       </main>
@@ -159,6 +164,7 @@
         </p>
       </footer>
     </div>
+    <div id="toast-container" class="toast-container"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
