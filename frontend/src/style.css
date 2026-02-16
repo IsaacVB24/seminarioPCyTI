@@ -375,3 +375,8 @@ input[type="number"] {
   font-size: 0.8rem;
   line-height: 1.4;
 }
+
+.source-badge.scopus {
+  background: rgba(255, 108, 0, 0.2);
+  color: #fb923c;
+}

@@ -43,6 +43,7 @@ function sourceBadgeClass(source: string): string {
   if (source === "semantic_scholar") return "semantic_scholar";
   if (source === "openalex") return "openalex";
   if (source === "crossref") return "crossref";
+  if (source === "scopus") return "scopus";
   return "";
 }
 
@@ -50,6 +51,7 @@ function sourceLabel(source: string): string {
   if (source === "semantic_scholar") return "Semantic Scholar";
   if (source === "openalex") return "OpenAlex";
   if (source === "crossref") return "CrossRef";
+  if (source === "scopus") return "Scopus";
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 

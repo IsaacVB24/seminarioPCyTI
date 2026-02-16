@@ -91,6 +91,22 @@ async def search_all(
             logger.error(f"[SEARCH] CrossRef error: {e}")
             results.append({"error": "crossref", "message": str(e)})
 
+    if "scopus" in chosen:
+        try:
+            from app.services.scopus import search_scopus
+            results.extend(
+                await search_scopus(
+                    query=q,
+                    max_results=per_source,
+                    from_date=from_date,
+                    to_date=to_date,
+                    sort_by=sort,
+                )
+            )
+        except Exception as e:
+            logger.error(f"[SEARCH] Scopus error: {e}")
+            results.append({"error": "scopus", "message": str(e)})
+
     # Filtrar entradas que son errores para no mezclar con artículos
     errors = [x for x in results if isinstance(x, dict) and "error" in x]
     articles = [x for x in results if isinstance(x, dict) and "source" in x]
