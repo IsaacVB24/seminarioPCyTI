@@ -64,7 +64,7 @@ function showToast(
   title: string,
   message: string,
   type: "success" | "error" | "info" = "info",
-  duration: number = 5000,
+  duration: number = 8000,
 ) {
   const container = document.getElementById("toast-container");
   if (!container) return;
