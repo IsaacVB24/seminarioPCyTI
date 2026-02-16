@@ -107,6 +107,21 @@ async def search_all(
             logger.error(f"[SEARCH] Scopus error: {e}")
             results.append({"error": "scopus", "message": str(e)})
 
+    if "springer" in chosen:
+        try:
+            from app.services.springer import search_springer
+            results.extend(
+                await search_springer(
+                    query=q,
+                    max_results=per_source,
+                    from_date=from_date,
+                    to_date=to_date,
+                )
+            )
+        except Exception as e:
+            logger.error(f"[SEARCH] Springer error: {e}")
+            results.append({"error": "springer", "message": str(e)})
+
     # Filtrar entradas que son errores para no mezclar con artículos
     errors = [x for x in results if isinstance(x, dict) and "error" in x]
     articles = [x for x in results if isinstance(x, dict) and "source" in x]

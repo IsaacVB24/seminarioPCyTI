@@ -44,6 +44,7 @@ function sourceBadgeClass(source: string): string {
   if (source === "openalex") return "openalex";
   if (source === "crossref") return "crossref";
   if (source === "scopus") return "scopus";
+  if (source === "springer") return "springer";
   return "";
 }
 
@@ -52,6 +53,7 @@ function sourceLabel(source: string): string {
   if (source === "openalex") return "OpenAlex";
   if (source === "crossref") return "CrossRef";
   if (source === "scopus") return "Scopus";
+  if (source === "springer") return "Springer Link";
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 

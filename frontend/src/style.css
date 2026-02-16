@@ -380,3 +380,8 @@ input[type="number"] {
   background: rgba(255, 108, 0, 0.2);
   color: #fb923c;
 }
+
+.source-badge.springer {
+  background: rgba(0, 128, 128, 0.2);
+  color: #008080;
+}
