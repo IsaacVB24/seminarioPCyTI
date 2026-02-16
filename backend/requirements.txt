@@ -4,3 +4,5 @@ httpx==0.26.0
 python-multipart==0.0.9
 google-genai
 python-dotenv==1.0.0
+pytest
+pytest-playwright

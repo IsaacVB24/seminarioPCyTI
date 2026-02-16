@@ -104,3 +104,39 @@ Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
 - **Error 429 (IA)**: Si ves que el filtro de IA tarda o falla, es probable que hayas excedido la cuota gratuita de Gemini. El sistema reintentará automáticamente (esperando 10s, 20s, 40s), pero puede requerir espera manual.
 - **Zotero**: Asegúrate de que tu `ZOTERO_API_KEY` tenga permisos de **lectura y escritura** para la biblioteca.
 - **Semantic Scholar**: Tiene límites de tasa por IP. Si falla, espera unos minutos.
+## Pruebas Automatizadas (E2E)
+
+El proyecto incluye pruebas de extremo a extremo (End-to-End) usando **Playwright** y **Pytest** para verificar el flujo completo de la aplicación (búsqueda, guardado en Zotero, filtros).
+
+### Ejecución de Pruebas
+
+1.  Asegúrate de estar en la carpeta `backend` (donde está el archivo `requirements.txt`):
+
+    ```bash
+    cd backend
+    ```
+
+2.  Instala las dependencias y los navegadores (si no lo has hecho):
+
+    ```bash
+    pip install -r requirements.txt
+    playwright install
+    ```
+
+3.  Asegúrate de que tu aplicación esté corriendo:
+    - Backend: `uvicorn app.main:app --reload` (en puerto 8000)
+    - Frontend: `npm run dev` (en puerto 5173)
+
+4.  Ejecuta las pruebas:
+
+    ```bash
+    pytest tests/e2e
+    ```
+
+    Para ver el navegador mientras se ejecutan las pruebas (modo "headed"):
+
+    ```bash
+    pytest tests/e2e --headed
+    ```
+
+> **Nota**: Las pruebas interactúan con los servicios reales (Zotero, Gemini), por lo que crearán elementos en tu biblioteca de Zotero. Puedes usar `python clear_zotero_library.py` para limpiar después.
