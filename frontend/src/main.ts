@@ -374,12 +374,12 @@ form.addEventListener("submit", async (e) => {
     const data: SearchResponse = await res.json();
 
     let statusMsg = `Encontrados ${data.total} artículos`;
-    if (
-      data.llm_filtered &&
-      data.original_total &&
-      data.original_total > data.total
-    ) {
-      statusMsg += ` (${data.original_total} antes del filtro IA)`;
+    if (data.llm_filtered) {
+      statusMsg += " (Filtrado por IA";
+      if (data.original_total && data.original_total > data.total) {
+        statusMsg += `, de ${data.original_total} originales`;
+      }
+      statusMsg += ")";
     }
     if (data.errors?.length) {
       statusMsg += `. Algunas fuentes fallaron: ${data.errors.map((e) => e.error).join(", ")}`;
