@@ -17,7 +17,7 @@ router = APIRouter()
 async def search_all(
     q: str = Query(..., min_length=2, description="Términos de búsqueda"),
     sources: str = Query("arxiv,semantic_scholar,openalex,crossref", description="Fuentes: arxiv, semantic_scholar, openalex, crossref"),
-    max_results: int = Query(20, ge=1, le=50),
+    max_results: int = Query(20, ge=1, le=100),
     sort: str = Query("relevance", description="relevance | pub_date"),
     from_date: Optional[str] = Query(None, description="Fecha desde YYYY-MM-DD"),
     to_date: Optional[str] = Query(None, description="Fecha hasta YYYY-MM-DD"),

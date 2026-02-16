@@ -1,36 +1,54 @@
-# Buscador de artículos científicos
+# Buscador de Artículos Científicos
 
-Aplicación para buscar artículos científicos según criterios de investigación. Combina **Python** (FastAPI) en el backend y **TypeScript** en el frontend.
+Aplicación para buscar artículos científicos en múltiples fuentes simultáneamente. Combina **Python (FastAPI)** en el backend y **TypeScript (Vite)** en el frontend.
 
-## Fuentes de búsqueda
+## Fuentes Disponibles
 
-- **PubMed**: biomedicina y ciencias de la vida (NCBI).
-- **arXiv**: física, matemáticas, informática, etc.
-- **Semantic Scholar**: multidisciplinario.
+1.  **arXiv**: Preprints de física, matemáticas, CS, etc.
+2.  **Semantic Scholar**: Multidisciplinario con análisis de citas.
+3.  **OpenAlex**: Catálogo global de obras, autores e instituciones.
+4.  **CrossRef**: Metadatos de DOIs y publicaciones académicas.
+5.  **Scopus**: Base de datos de Elsevier (Requiere API Key).
+6.  **Springer Link**: Publicaciones de Springer Nature (Requiere API Key).
 
 ## Requisitos
 
-- Python 3.10+
-- Node.js 18+ (para el frontend)
+- **Python 3.10+**
+- **Node.js 18+** (para el frontend)
+- **API Keys** (opcionales pero recomendadas):
+  - `SCOPUS_API_KEY`: Para Scopus.
+  - `SPRINGER_API_KEY`: Para Springer Link.
+  - `GEMINI_API_KEY`: (Opcional) Para filtrado inteligente con LLM.
 
-## Instalación y uso
+## Instalación
 
 ### 1. Backend (Python)
 
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate    # En Windows
-# source venv/bin/activate   # En Linux/macOS
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+# source venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload   # Iniciar servidor
 ```
 
-El API quedará en **http://127.0.0.1:8000**. Documentación interactiva: http://127.0.0.1:8000/docs
+Crea un archivo `.env` en la carpeta `backend/` con tus claves:
+
+```env
+SCOPUS_API_KEY=tu_clave_scopus
+SPRINGER_API_KEY=tu_clave_springer
+GEMINI_API_KEY=tu_clave_gemini
+```
+
+El API estará disponible en: [http://127.0.0.1:8000](http://127.0.0.1:8000)  
+Documentación interactiva (Swagger): [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ### 2. Frontend (TypeScript / Vite)
 
-En otra terminal:
+En una nueva terminal:
 
 ```bash
 cd frontend
@@ -38,54 +56,51 @@ npm install
 npm run dev
 ```
 
-Abre **http://localhost:5173** en el navegador. Las peticiones al API se redirigen al backend por el proxy de Vite.
+Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
 
-## Criterios de búsqueda
+## Uso
 
-- **Términos**: palabras clave o frase.
-- **Fuentes**: marcar PubMed, arXiv y/o Semantic Scholar.
-- **Orden**: por relevancia o por fecha de publicación.
-- **Rango de fechas**: desde / hasta (opcional).
-- **Máximo de resultados**: 5–50 por búsqueda.
+1.  Ingresa tus términos de búsqueda (ej. "software engineering", "machine learning").
+2.  Selecciona las fuentes deseadas.
+3.  (Opcional) Configura rango de fechas o filtro por relevancia.
+4.  Define el máximo de resultados (hasta 100).
+5.  Haz clic en **Buscar**.
 
-## Estructura del proyecto
+Los resultados mostrarán:
+
+- Título y enlace al artículo/PDF.
+- Autores, fecha y revista/fuente.
+- Resumen (snippet) truncado a 300 caracteres.
+- Badge de la fuente (con código de colores).
+
+## Estructura del Proyecto
 
 ```
-Seminario/
+Carpeta raíz/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # FastAPI app
+│   │   ├── main.py           # Configuración FastAPI
 │   │   ├── routers/
-│   │   │   └── search.py     # GET /api/search
-│   │   └── services/
-│   │       ├── pubmed.py
+│   │   │   └── search.py     # Lógica de búsqueda unificada
+│   │   └── services/         # Integraciones con APIs externas
 │   │       ├── arxiv.py
-│   │       └── semantic_scholar.py
+│   │       ├── semantic_scholar.py
+│   │       ├── openalex.py
+│   │       ├── crossref.py
+│   │       ├── scopus.py
+│   │       └── springer.py
 │   └── requirements.txt
 ├── frontend/
-│   ├── index.html
+│   ├── index.html            # Interfaz principal
 │   ├── src/
-│   │   ├── main.ts
-│   │   └── style.css
-│   ├── package.json
-│   └── vite.config.ts
+│   │   ├── main.ts           # Lógica del cliente
+│   │   └── style.css         # Estilos
+│   └── package.json
 └── README.md
 ```
 
-## API
+## Notas Técnicas
 
-- **GET** `/api/search?q=...&sources=pubmed,arxiv,semantic_scholar&max_results=20&sort=relevance&from_date=&to_date=`
-
-Respuesta: `{ "query", "total", "errors", "articles" }`. Cada artículo incluye `title`, `authors`, `journal`, `pub_date`, `url`, `doi`, `source`, `snippet` y, en arXiv, `pdf_url`.
-
-## Opcional: API key de PubMed
-
-Para más solicitudes por segundo puedes usar una API key de NCBI. Pásala como variable de entorno o añade el parámetro en el backend:
-
-- Variable de entorno: `NCBI_API_KEY=tu_clave`
-
-(En el código actual no está integrada; se puede añadir en `app/services/pubmed.py`.)
-
-## Licencia
-
-Uso libre para fines académicos y de investigación.
+- Se utiliza `urllib` (biblioteca estándar de Python) en los servicios para garantizar máxima compatibilidad y estabilidad.
+- El límite de resultados se ha aumentado a 100 por búsqueda.
+- **Nota sobre Semantic Scholar**: Esta API tiene límites estrictos de tasa (rate limits) basados en IP. Si realizas muchas peticiones consecutivas, es posible que falle temporalmente (Error 429). El sistema incluye lógica de reintento, pero si persiste, espera unos minutos.

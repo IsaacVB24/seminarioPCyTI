@@ -1,8 +1,9 @@
 """Búsqueda en CrossRef."""
-import httpx
 import logging
-from typing import Optional
+import urllib.request
 import urllib.parse
+import json
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +15,7 @@ async def search_crossref(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
 ) -> list[dict]:
-    """
-    Busca en CrossRef.
-    """
+    """Busca en CrossRef using urllib."""
     logger.info(f"[CROSSREF] Searching for: '{query}' (max_results={max_results})")
     
     params = {
@@ -26,7 +25,6 @@ async def search_crossref(
     }
 
     filters = []
-    
     if from_date:
         filters.append(f"from-pub-date:{from_date}")
     if to_date:
@@ -38,38 +36,37 @@ async def search_crossref(
     headers = {
         "User-Agent": "SeminarioResearch/1.0 (mailto:researcher@seminariopcyt.edu.mx)"
     }
+    
+    # CrossRef params might need proper encoding, urllib handles dict to query string well.
+    query_string = urllib.parse.urlencode(params)
+    url = f"{BASE_URL}?{query_string}"
 
-    async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
-        # CrossRef requiere codificación correcta de parámetros
-        # httpx lo maneja, pero a veces con caracteres especiales en filtros hay que tener cuidado.
-        logger.debug(f"[CROSSREF] GET {BASE_URL} params={params}")
-        try:
-            r = await client.get(BASE_URL, params=params)
-            logger.info(f"[CROSSREF] Response status: {r.status_code}")
-            
-            if r.status_code != 200:
-                logger.error(f"[CROSSREF] Error: {r.text}")
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            logger.info(f"[CROSSREF] Response status: {response.getcode()}")
+            if response.getcode() != 200:
+                logger.error(f"[CROSSREF] Error {response.getcode()}")
                 return []
-                
-            data = r.json()
-        except Exception as e:
-            logger.error(f"[CROSSREF] Exception: {e}")
-            return []
+            
+            body = response.read().decode('utf-8')
+            data = json.loads(body)
+            
+    except Exception as e:
+        logger.error(f"[CROSSREF] Exception: {e}")
+        return []
 
     items = data.get("message", {}).get("items", [])
     articles = []
 
     for item in items:
-        # DOI
         doi = item.get("DOI", "")
         if not doi:
             continue
             
-        # Título
         titles = item.get("title", [])
         title = titles[0] if titles else "Sin título"
         
-        # Autores
         authors_list = item.get("author", [])
         authors = []
         for auth in authors_list:
@@ -79,21 +76,14 @@ async def search_crossref(
             if name:
                 authors.append({"name": name})
         
-        # Journal / Container
         containers = item.get("container-title", [])
         journal = containers[0] if containers else "CrossRef"
         
-        # Fecha creation
         created = item.get("created", {})
         date_parts = created.get("date-parts", [[]])[0]
         pub_date = "-".join(map(str, date_parts)) if date_parts else ""
         
-        # URL
         url = item.get("URL") or f"https://doi.org/{doi}"
-        
-        # Snippet / Abstract
-        # CrossRef a veces tiene abstract jats:abstract. Es XML embebido.
-        # Por simplicidad usaremos el título.
         snippet = title
         
         articles.append({
