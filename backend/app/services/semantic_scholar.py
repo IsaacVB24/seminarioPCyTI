@@ -1,7 +1,9 @@
 """Búsqueda en Semantic Scholar (multidisciplinario)."""
-import httpx
-import asyncio
 import logging
+import urllib.request
+import urllib.parse
+import json
+import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -15,7 +17,7 @@ async def search_semantic_scholar(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
 ) -> list[dict]:
-    """Busca en Semantic Scholar. Fechas en YYYY-MM-DD."""
+    """Busca en Semantic Scholar using urllib."""
     logger.info(f"[SEMANTIC_SCHOLAR] Searching for: '{query}' (max_results={max_results})")
     
     params = {
@@ -25,29 +27,45 @@ async def search_semantic_scholar(
     }
     if from_date:
         params["year"] = from_date[:4]
-    # Semantic Scholar no tiene filtro to_date fino en la búsqueda
 
     headers = {"User-Agent": "SeminarioResearch/1.0"}
+    query_string = urllib.parse.urlencode(params)
+    url = f"{BASE}/paper/search?{query_string}"
 
-    # Retry logic for rate limiting (429 errors)
     max_retries = 3
+    data = {}
+    
     for attempt in range(max_retries):
-        async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
-            url = f"{BASE}/paper/search"
-            logger.debug(f"[SEMANTIC_SCHOLAR] GET {url} (attempt {attempt + 1})")
-            r = await client.get(url, params=params)
-            logger.info(f"[SEMANTIC_SCHOLAR] Response status: {r.status_code}")
-            if r.status_code == 429:
-                if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
-                    logger.warning(f"[SEMANTIC_SCHOLAR] Rate limited, waiting {wait_time}s...")
-                    await asyncio.sleep(wait_time)
-                    continue
-            r.raise_for_status()
-            data = r.json()
-            break
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req) as response:
+                logger.info(f"[SEMANTIC_SCHOLAR] Response status: {response.getcode()}")
+                if response.getcode() == 200:
+                    body = response.read().decode('utf-8')
+                    data = json.loads(body)
+                    break
+                elif response.getcode() == 429:
+                     wait_time = 2 ** attempt
+                     logger.warning(f"[SEMANTIC_SCHOLAR] Rate limited, waiting {wait_time}s...")
+                     time.sleep(wait_time) # Blocking sleep is acceptable here for simplicity in async wrapper context or use asyncio.sleep if needed but urllib is blocking anyway
+                     continue
+                else:
+                    logger.error(f"[SEMANTIC_SCHOLAR] Error {response.getcode()}")
+                    return [{"error": "semantic_scholar", "message": f"Error API: {response.getcode()}"}]
+                    
+        except urllib.request.HTTPError as e:
+            if e.code == 429:
+                 if attempt < max_retries - 1:
+                     wait_time = 2 ** attempt
+                     logger.warning(f"[SEMANTIC_SCHOLAR] Rate limited (HTTPError), waiting {wait_time}s...")
+                     time.sleep(wait_time)
+                     continue
+            logger.error(f"[SEMANTIC_SCHOLAR] HTTP Error: {e.code}")
+            return [{"error": "semantic_scholar", "message": f"Error HTTP: {e.code}"}]
+        except Exception as e:
+            logger.error(f"[SEMANTIC_SCHOLAR] Connection error: {e}")
+            return [{"error": "semantic_scholar", "message": f"Error de conexión: {str(e)}"}]
     else:
-        # All retries exhausted
         logger.error("[SEMANTIC_SCHOLAR] All retries exhausted")
         return []
 

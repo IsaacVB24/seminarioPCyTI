@@ -100,16 +100,26 @@ IMPORTANT: Provide a single, concise explanation of why this article received th
 Only include articles with score >= 0.5. Order by score descending."""
 
         try:
-            response = await self.client.aio.models.generate_content(
-                model='gemini-3-flash-preview',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(
-                        thinking_budget=1024
-                    )
-                )
-            )
+            # Retry logic for 429 errors
+            import asyncio
+            max_retries = 3
+            base_delay = 10
             
+            for attempt in range(max_retries):
+                try:
+                    response = await self.client.aio.models.generate_content(
+                        model='gemini-3-flash-preview',
+                        contents=prompt,
+                    )
+                    break # Success
+                except Exception as e:
+                    if "429" in str(e) and attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        logger.warning(f"[LLM_FILTER] Quota exceeded, retrying in {delay}s...")
+                        await asyncio.sleep(delay)
+                    else:
+                        raise e
+
             # Extraer el texto de la respuesta de Gemini
             result_text = ""
             for part in response.candidates[0].content.parts:

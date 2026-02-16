@@ -17,7 +17,7 @@ router = APIRouter()
 async def search_all(
     q: str = Query(..., min_length=2, description="Términos de búsqueda"),
     sources: str = Query("arxiv,semantic_scholar,openalex,crossref", description="Fuentes: arxiv, semantic_scholar, openalex, crossref"),
-    max_results: int = Query(20, ge=1, le=50),
+    max_results: int = Query(20, ge=1, le=100),
     sort: str = Query("relevance", description="relevance | pub_date"),
     from_date: Optional[str] = Query(None, description="Fecha desde YYYY-MM-DD"),
     to_date: Optional[str] = Query(None, description="Fecha hasta YYYY-MM-DD"),
@@ -90,6 +90,37 @@ async def search_all(
         except Exception as e:
             logger.error(f"[SEARCH] CrossRef error: {e}")
             results.append({"error": "crossref", "message": str(e)})
+
+    if "scopus" in chosen:
+        try:
+            from app.services.scopus import search_scopus
+            results.extend(
+                await search_scopus(
+                    query=q,
+                    max_results=per_source,
+                    from_date=from_date,
+                    to_date=to_date,
+                    sort_by=sort,
+                )
+            )
+        except Exception as e:
+            logger.error(f"[SEARCH] Scopus error: {e}")
+            results.append({"error": "scopus", "message": str(e)})
+
+    if "springer" in chosen:
+        try:
+            from app.services.springer import search_springer
+            results.extend(
+                await search_springer(
+                    query=q,
+                    max_results=per_source,
+                    from_date=from_date,
+                    to_date=to_date,
+                )
+            )
+        except Exception as e:
+            logger.error(f"[SEARCH] Springer error: {e}")
+            results.append({"error": "springer", "message": str(e)})
 
     # Filtrar entradas que son errores para no mezclar con artículos
     errors = [x for x in results if isinstance(x, dict) and "error" in x]

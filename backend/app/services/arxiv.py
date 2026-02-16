@@ -1,6 +1,7 @@
 """Búsqueda en arXiv (física, matemáticas, CS, etc.)."""
-import httpx
 import logging
+import urllib.request
+import urllib.parse
 from typing import Optional
 import xml.etree.ElementTree as ET
 
@@ -18,8 +19,7 @@ async def search_arxiv(
     to_date: Optional[str] = None,
 ) -> list[dict]:
     """
-    Busca en arXiv. sort_by: relevance, lastUpdatedDate, submittedDate.
-    sort_order: ascending, descending.
+    Busca en arXiv using urllib.
     """
     logger.info(f"[ARXIV] Searching for: '{query}' (max_results={max_results})")
     
@@ -32,14 +32,23 @@ async def search_arxiv(
     }
 
     headers = {"User-Agent": "SeminarioResearch/1.0"}
+    query_string = urllib.parse.urlencode(params)
+    url = f"https://export.arxiv.org/api/query?{query_string}"
 
-    async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
-        url = "https://export.arxiv.org/api/query"
-        logger.debug(f"[ARXIV] GET {url}")
-        r = await client.get(url, params=params)
-        logger.info(f"[ARXIV] Response status: {r.status_code}")
-        r.raise_for_status()
-        root = ET.fromstring(r.text)
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            logger.info(f"[ARXIV] Response status: {response.getcode()}")
+            if response.getcode() != 200:
+                logger.error(f"[ARXIV] Error {response.getcode()}")
+                return [{"error": "arxiv", "message": f"Error API: {response.getcode()}"}]
+            
+            data = response.read()
+            root = ET.fromstring(data)
+            
+    except Exception as e:
+        logger.error(f"[ARXIV] Connection error: {e}")
+        return [{"error": "arxiv", "message": f"Error de conexión: {str(e)}"}]
 
     articles = []
     for entry in root.findall("atom:entry", ARXiv_NS):
