@@ -271,8 +271,14 @@ async function loadSavedReferences() {
     if (items.length === 0) {
       libraryResultsEl.innerHTML =
         "<p class='status'>No tienes referencias guardadas aún.</p>";
+      const titleEl = document.getElementById("library-title");
+      if (titleEl) titleEl.textContent = "📚 Referencias Guardadas (0)";
       return;
     }
+
+    const titleEl = document.getElementById("library-title");
+    if (titleEl)
+      titleEl.textContent = `📚 Referencias Guardadas (${items.length})`;
 
     libraryResultsEl.innerHTML = items
       .map((a, i) => renderArticle(a, i, true))
