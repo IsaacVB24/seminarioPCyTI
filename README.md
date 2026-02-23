@@ -1,142 +1,117 @@
-# Buscador de Artículos Científicos
+# 🔍 Buscador de Artículos Científicos (AI-Powered)
 
-Aplicación para buscar artículos científicos en múltiples fuentes simultáneamente, filtrarlos con Inteligencia Artificial (Google Gemini) y guardarlos en tu biblioteca personal de Zotero.
+Una herramienta avanzada para investigadores que permite buscar en múltiples fuentes académicas simultáneamente, filtrar resultados mediante Inteligencia Artificial (Google Gemini) y gestionar tu biblioteca personal de Zotero de forma automática.
 
-## Fuentes Disponibles
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
+![Node](https://img.shields.io/badge/node-18%2B-green.svg)
 
-1.  **arXiv**: Preprints de física, matemáticas, CS, etc.
-2.  **Semantic Scholar**: Multidisciplinario con análisis de citas.
-3.  **OpenAlex**: Catálogo global de obras, autores e instituciones.
-4.  **CrossRef**: Metadatos de DOIs y publicaciones académicas.
-5.  **Scopus**: Base de datos de Elsevier (Requiere API Key).
-6.  **Springer Link**: Publicaciones de Springer Nature (Requiere API Key).
+---
 
-## Requisitos
+## 🚀 Inicio Rápido
 
-- **Python 3.10+**
-- **Node.js 18+** (para el frontend)
-- **API Keys**:
-  - `GEMINI_API_KEY`: **Requerido** para el filtrado por IA y cálculo de relevancia.
-  - `ZOTERO_API_KEY`: **Requerido** para guardar referencias.
-  - `ZOTERO_USER_ID`: **Requerido** para identificar tu biblioteca.
-  - `SCOPUS_API_KEY`: (Opcional) Para Scopus.
-  - `SPRINGER_API_KEY`: (Opcional) Para Springer Link.
+### Requisitos Previos
 
-## Instalación
+Para ejecutar este proyecto, asegúrate de tener instalado:
 
-### 1. Backend (Python)
+- [Python 3.10 o superior](https://www.python.org/downloads/)
+- [Node.js 18 o superior](https://nodejs.org/)
+- Una cuenta en [Zotero](https://www.zotero.org/)
 
-```bash
-cd backend
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/macOS:
-# source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload   # Iniciar servidor
-```
+### 1. Configuración del Backend
 
-Crea un archivo `.env` en la carpeta `backend/` con tus claves:
+1. Entra a la carpeta del servidor y crea un entorno virtual:
+   ```bash
+   cd backend
+   python -m venv venv
+   ```
+2. Activa el entorno:
+   - **Windows:** `venv\Scripts\activate`
+   - **Linux/macOS:** `source venv/bin/activate`
+3. Instala las dependencias:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Configura tus variables de entorno (ver sección [🔑 API Keys](#-obtención-de-api-keys)).
+
+### 2. Configuración del Frontend
+
+1. En una nueva terminal, entra a la carpeta del cliente:
+   ```bash
+   cd frontend
+   npm install
+   ```
+2. Inicia el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🔑 Obtención de API Keys
+
+Para que el sistema funcione a pleno rendimiento, necesitarás configurar las siguientes llaves en un archivo `.env` dentro de la carpeta `backend/`:
+
+| Servicio           | Propósito                    | Dónde obtenerla                                                                        |
+| :----------------- | :--------------------------- | :------------------------------------------------------------------------------------- |
+| **Google Gemini**  | Filtrado por IA y Relevancia | [Google AI Studio](https://aistudio.google.com/app/apikey)                             |
+| **Zotero API Key** | Guardado de referencias      | [Zotero Settings](https://www.zotero.org/settings/keys)                                |
+| **Zotero User ID** | Identificar tu biblioteca    | [Zotero Settings](https://www.zotero.org/settings/keys) (Aparece arriba de las llaves) |
+| **Scopus**         | Fuente adicional (Opcional)  | [Elsevier Dev Portal](https://dev.elsevier.com/)                                       |
+| **Springer**       | Fuente adicional (Opcional)  | [Springer Nature API](https://dev.springernature.com/)                                 |
+
+### Ejemplo de archivo `.env`:
 
 ```env
-# IA
-GEMINI_API_KEY=tu_clave_gemini
-
-# Zotero (Gestión de referencias)
-ZOTERO_API_KEY=tu_clave_zotero_con_permisos_write
-ZOTERO_USER_ID=tu_user_id_zotero
-
-# Bibliográficas (Opcionales)
-SCOPUS_API_KEY=tu_clave_scopus
-SPRINGER_API_KEY=tu_clave_springer
+GEMINI_API_KEY=tu_clave_aqui
+ZOTERO_API_KEY=tu_clave_aqui
+ZOTERO_USER_ID=tu_id_aqui
+SCOPUS_API_KEY=opcional
+SPRINGER_API_KEY=opcional
 ```
 
-El API estará disponible en: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+---
 
-### 2. Frontend (TypeScript / Vite)
+## 🛠️ Estructura del Proyecto
 
-En una nueva terminal:
+### Backend (FastAPI)
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- `app/main.py`: Corazón de la API.
+- `app/services/llm_filter.py`: Lógica del filtro de IA con Gemini.
+- `app/services/zotero.py`: Integración con la API de Zotero.
+- `app/routers/search.py`: Orquestador de búsquedas multicanal.
 
-Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
+### Frontend (TypeScript + Vite)
 
-## Uso
+- `src/main.ts`: Lógica de la interfaz y comunicación con el backend.
+- `src/style.css`: Diseño moderno con soporte para tema oscuro.
 
-1.  **Búsqueda**: Ingresa términos, selecciona fuentes y filtros.
-2.  **Filtro IA**: Activa "🤖 Filtrar con IA" para que Google Gemini analice la relevancia de cada artículo según tu contexto.
-3.  **Guardar**:
-    - Usa el botón "💾 Guardar" en cada tarjeta para guardar individualmente.
-    - Usa "💾 Guardar todos los resultados en Zotero" para guardar en lote (detecta duplicados automáticamente).
-4.  **Biblioteca**: Haz clic en "📚 Mis Referencias" para ver lo que has guardado en Zotero.
+---
 
-## Estructura del Proyecto y Archivos Relevantes
+## 🧪 Pruebas Automatizadas
 
-### Backend (`backend/`)
+El proyecto utiliza **Playwright** para asegurar que todo funcione correctamente.
 
-- **`app/main.py`**: Punto de entrada de la aplicación FastAPI. Configura CORS e incluye los routers.
-- **`app/routers/`**:
-  - **`search.py`**: Maneja el endpoint `/search`. Orquesta las llamadas a todas las APIs académicas y la llamada posterior al filtro LLM.
-  - **`zotero.py`**: Maneja endpoints para Zotero (`/zotero/items`, `/zotero/items/batch`). Conecta el frontend con el servicio de Zotero.
-- **`app/services/`**: Lógica de negocio e integraciones.
-  - **`llm_filter.py`**: **CRÍTICO**. Implementa la conexión con Google Gemini. Contiene el prompt de sistema, lógica de reintento para error 429 (cuota excedida) y parseo de la respuesta JSON para asignar puntajes de relevancia.
-  - **`zotero.py`**: Gestiona la comunicación con la API de Zotero. Formatea los artículos al esquema de Zotero, verifica duplicados por título y maneja el guardado por lotes.
-  - **`arxiv.py`, `crossref.py`, etc.**: Módulos individuales para buscar en cada fuente académica. Usan `urllib` para máxima estabilidad.
-- **`clear_zotero_library.py`**: Script de utilidad para **BORRAR** todas las referencias de la biblioteca Zotero configurada. Útil para reiniciar pruebas.
+1. Instala los navegadores necesarios:
+   ```bash
+   cd backend
+   playwright install
+   ```
+2. Ejecuta los tests:
+   ```bash
+   pytest tests/e2e
+   ```
 
-### Frontend (`frontend/`)
+---
 
-- **`index.html`**: Estructura HTML principal. Contiene el formulario de búsqueda, el contenedor de resultados y la vista de biblioteca.
-- **`src/main.ts`**: **Lógica Principal**.
-  - Maneja eventos del DOM (búsqueda, botones de guardar).
-  - Renderiza las tarjetas de artículos (incluyendo badges de IA y fuentes).
-  - Gestiona la navegación entre la vista de búsqueda y la de biblioteca.
-  - Implementa el sistema de notificaciones (Toasts).
-- **`src/style.css`**: Estilos globales. Define el tema oscuro, diseño de tarjetas, animaciones de toasts y badges de colores para cada fuente y nivel de relevancia.
+## 🤝 Contribuciones e Incidentes
 
-## Notas Técnicas y Solución de Problemas
+Si encuentras algún problema o tienes sugerencias:
 
-- **Error 429 (IA)**: Si ves que el filtro de IA tarda o falla, es probable que hayas excedido la cuota gratuita de Gemini. El sistema reintentará automáticamente (esperando 10s, 20s, 40s), pero puede requerir espera manual.
-- **Zotero**: Asegúrate de que tu `ZOTERO_API_KEY` tenga permisos de **lectura y escritura** para la biblioteca.
-- **Semantic Scholar**: Tiene límites de tasa por IP. Si falla, espera unos minutos.
-## Pruebas Automatizadas (E2E)
+1. Revisa si el error es **429 (Límite de cuota)** en Gemini; el sistema reintenta automáticamente.
+2. Asegúrate de que tu `ZOTERO_API_KEY` tenga permisos de **escritura**.
 
-El proyecto incluye pruebas de extremo a extremo (End-to-End) usando **Playwright** y **Pytest** para verificar el flujo completo de la aplicación (búsqueda, guardado en Zotero, filtros).
+---
 
-### Ejecución de Pruebas
-
-1.  Asegúrate de estar en la carpeta `backend` (donde está el archivo `requirements.txt`):
-
-    ```bash
-    cd backend
-    ```
-
-2.  Instala las dependencias y los navegadores (si no lo has hecho):
-
-    ```bash
-    pip install -r requirements.txt
-    playwright install
-    ```
-
-3.  Asegúrate de que tu aplicación esté corriendo:
-    - Backend: `uvicorn app.main:app --reload` (en puerto 8000)
-    - Frontend: `npm run dev` (en puerto 5173)
-
-4.  Ejecuta las pruebas:
-
-    ```bash
-    pytest tests/e2e
-    ```
-
-    Para ver el navegador mientras se ejecutan las pruebas (modo "headed"):
-
-    ```bash
-    pytest tests/e2e --headed
-    ```
-
-> **Nota**: Las pruebas interactúan con los servicios reales (Zotero, Gemini), por lo que crearán elementos en tu biblioteca de Zotero. Puedes usar `python clear_zotero_library.py` para limpiar después.
+Desarrollado para el Seminario de Posgrado en Ciencias y Tecnologías de la Información (UAM).
